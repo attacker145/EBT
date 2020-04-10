@@ -1,9 +1,3 @@
-/*
- * credentials.c
- *
- *  Created on: Jun 8, 2018
- *      Author: rchak
- */
 
 #include <string.h>
 #include <stdlib.h>
