@@ -1,3 +1,3 @@
 # EBT
-Elevated body temperature detector
+Elevated body temperature detector with cloud interface
 
