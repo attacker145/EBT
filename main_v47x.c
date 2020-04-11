@@ -163,7 +163,7 @@
 #define FOREVER                      1
 #define array_size 51
 #define AK975
-#define STDEVTH                     2500
+#define STDEVTH                     500
 
 volatile float g_accXIntervalSum = 0;
 volatile float g_accYIntervalSum = 0;
