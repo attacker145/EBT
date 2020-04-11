@@ -1799,10 +1799,8 @@ int main()
     unsigned long int mean_SNSR1;
     unsigned long int mean_SNSR2;
     double st_dev1;
-    double st_dev2;
     float ADCsum;
     unsigned int stl_data3[10];
-    unsigned int stl_data4[10];
     uint64_t run = 0;
     //float MAC;
     BoardInit();// Board Initialization
@@ -2026,11 +2024,6 @@ int main()
        }else{
            strcpy ( &buf[cx], " & temp=  ");
        }
-       if (st_dev2 > STDEVTH){//Capture motion
-           strcpy ( &buf[cx], " & Light=X");
-       }else{
-           strcpy ( &buf[cx], " & Light= ");
-       }
 #endif
        if (ebt == 1){//Capture motion
            strcpy ( &buf[(cx+10)], " & base=EBT");//Elevated body temperature
@@ -2043,7 +2036,7 @@ int main()
 /*
  * Test if there is motion. The "t_cntr>40" prevents multiple data transmissions.
  */
-       if ((((st_dev1>STDEVTH || st_dev2>STDEVTH) || ebt==1) && t_cntr>40) || t_cntr2 == 180){//Post data
+       if (((st_dev1>STDEVTH || ebt==1) && t_cntr>40) || t_cntr2 == 180){//Post data
             if(cnn_fail == 0){
                 t_cntr = 0;
                 ebt = 0;
