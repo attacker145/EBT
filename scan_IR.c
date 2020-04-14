@@ -1,9 +1,3 @@
-/*
- * scan.c
- *
- *  Created on: Mar 22, 2019
- *      Author: Roman.Chak
- */
 
 #include <string.h>
 #include <stdlib.h>
