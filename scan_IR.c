@@ -52,8 +52,8 @@ extern int AK9753AReadData(unsigned char *IR1L_, unsigned char *IR1H_,
 extern float getTemperature_AK9753(unsigned char *sgn);
 
 extern unsigned char BLE_data_rdy;
-extern unsigned int uiGPIOPort;//02/17/2017
-extern unsigned char pucGPIOPin;//02/17/2017
+extern unsigned int uiGPIOPort;
+extern unsigned char pucGPIOPin;
 extern unsigned char T_snr [2];
 extern unsigned int T_snr_int;
 extern unsigned char Lght;
