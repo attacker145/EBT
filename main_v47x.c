@@ -1797,7 +1797,7 @@ int main()
     unsigned char ebt = 0;
     int cx;
     unsigned long int mean_SNSR1;
-    unsigned long int mean_SNSR2;
+    //unsigned long int mean_SNSR2;
     double st_dev1;
     float ADCsum;
     unsigned int stl_data3[10];
@@ -1982,7 +1982,7 @@ int main()
        IR4s = SignMag (IR4);
        IR_AVE = (IR1s + IR2s + IR3s + IR4s)/4;//A negative number will be represented as 2's comp
        //IR_AVE = IR_AVE & 0xFFFF; // only use bottom 16 bits
-       if(mean_SNSR1 > 10000 || mean_SNSR2 > 10000){
+       if(mean_SNSR1 > 10000){
            if (IR_AVE > 800){//10000/617 = 16.2 inch.
                ebt = 1;
                UART_PRINT(" IR = %.0f ",IR_AVE);
