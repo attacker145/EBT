@@ -43,8 +43,8 @@
 
 #define cred
 
-#define APPLICATION_VERSION "2.15x"
-#define APP_NAME            "Sensors v2.15x."
+#define APPLICATION_VERSION "2.16x"
+#define APP_NAME            "WebApp v2.16x."
 
 #include "network_defines.h"
 
@@ -1766,43 +1766,71 @@ double ComputeTemperature(double dVobject, double dTAmbient)
     tObj = (tObj - 273.15);
     return tObj;
 }
+float get_IR_ref (unsigned char num){
+    unsigned char i;
+    unsigned char IR1L_, IR1H_, IR2L_, IR2H_, IR3L_, IR3H_, IR4L_, IR4H_ = 0;
+    unsigned int IR1, IR2, IR3, IR4 = 0;
+    float IR_AVE = 0;
+    float IR1s, IR2s, IR3s, IR4s;
+    float IR_arry[20];
 
+    for (i = 0; i < num; i++){ //Array of 20 data points
+        GPIO_IF_GetPortNPin(SH_GPIO_12,&uiGPIOPort,&pucGPIOPin);    // Read GPIO12: AK9753A INT Computes port and pin number from the GPIO number
+        ucPinValue = GPIO_IF_Get(SH_GPIO_12,uiGPIOPort,pucGPIOPin); // Read pin status of GPIO22
+        if(ucPinValue == 0){
+            AK9753AReadData(&IR1L_, &IR1H_, &IR2L_, &IR2H_, &IR3L_, &IR3H_, &IR4L_, &IR4H_);    //*
+            //roomtemp = getTemperature_AK9753(&sgn);
+        }
+        IR1 = IR1H_; IR1 = IR1 << 8;                                                             //*
+        IR1 = IR1 + (unsigned int)IR1L_;                                                         //*
+        IR2 = IR2H_; IR2 = IR2 << 8;                                                             //*
+        IR2 = IR2 + (unsigned int)IR2L_;                                                         //*
+        IR3 = IR3H_; IR3 = IR3 << 8;                                                             //*
+        IR3 = IR3 + (unsigned int)IR3L_;                                                         //*
+        IR4 = IR4H_; IR4 = IR4 << 8;                                                             //*
+        IR4 = IR4 + (unsigned int)IR4L_;                                                         //*
+        IR1s = SignMag (IR1);
+        IR2s = SignMag (IR2);
+        IR3s = SignMag (IR3);
+        IR4s = SignMag (IR4);
+        IR_AVE = (IR1s + IR2s + IR3s + IR4s)/4;//A negative number will be represented as 2's comp
+        IR_arry[i] = IR_AVE;
+        MAP_UtilsDelay(1280000);
+    }
+    for (i = 0; i < num; i++){
+        IR_AVE += IR_arry[i];
+    }
+    IR_AVE = IR_AVE / num;
+    return IR_AVE;
+}
 //######################################################################################
 int main()
 {
 
     long lRetVal = -1;
     float sensorTemp;
+    float THR, THRarry [4];
+    unsigned char THcntr;
     tBoolean bRetcode;
     HTTPCli_Struct httpClient;
-    unsigned int t_cntr = 0;
-    unsigned int t_cntr1 = 0;
-    unsigned int t_cntr2 = 0;
-    unsigned int f_cntr = 0;
-    unsigned char IR1L_ = 0;
-    unsigned char IR1H_ = 0;
-    unsigned char IR2L_ = 0;
-    unsigned char IR2H_ = 0;
-    unsigned char IR3L_ = 0;
-    unsigned char IR3H_ = 0;
-    unsigned char IR4L_ = 0;
-    unsigned char IR4H_ = 0;
-    unsigned int IR1 = 0;
-    unsigned int IR2 = 0;
-    unsigned int IR3 = 0;
-    unsigned int IR4 = 0;
+    unsigned int t_cntr, t_cntr1, t_cntr2, f_cntr;
+    unsigned char IR1L_, IR1H_, IR2L_, IR2H_, IR3L_, IR3H_, IR4L_, IR4H_;
+    unsigned char i;
+    unsigned int IR1, IR2, IR3, IR4;
     float IR_AVE = 0;
     float IR1s, IR2s, IR3s, IR4s;
     unsigned char cnn_fail = 0;
     unsigned char ebt = 0;
     int cx;
     unsigned long int mean_SNSR1;
-    //unsigned long int mean_SNSR2;
     double st_dev1;
     float ADCsum;
     unsigned int stl_data3[10];
     uint64_t run = 0;
-    //float MAC;
+    IR1L_ = IR1H_ = IR2L_ = IR2H_ = IR3L_ = IR3H_ = IR4L_ = IR4H_ = 0;
+    t_cntr = t_cntr1 = t_cntr2 = f_cntr = 0;
+    IR1 = IR2 = IR3 = IR4 = 0;
+
     BoardInit();// Board Initialization
 
     sonar_cycle_pwr ();// 5sec off pins start to initialize here
@@ -1938,20 +1966,45 @@ int main()
     GPIO_IF_GetPortNPin(SH_GPIO_6,&uiGPIOPort,&pucGPIOPin);//PIN61
     Door = GPIO_IF_Get(SH_GPIO_6,uiGPIOPort,pucGPIOPin);// Read the door
 #endif
+
+    for (cx=0; cx < 50; cx++){//Initial 50 point array
+        st_dev1 = sonar_sensrA(&mean_SNSR1, stl_data1, T_snr);//Motion detection and distance measurement. PIN_62 GPIO_7
+        st_dev1 = noise_suppr (st_dev1, &mean_SNSR1, stl_data3, stl_data1, 10);//Noise suppression. 617/2.54 = 243 counts per cm
+        prnt_sonarA (st_dev1, mean_SNSR1);//Print score and distance in counts 617 counts per inch
+        UART_PRINT("\n %d  ", cx);
+        MAP_UtilsDelay(1280000);
+    }
+    timerA0_start(5000);
+    THR = get_IR_ref (20);
+    UART_PRINT(" THR= %.3f \n",THR);
+    cx = 0;
     ebt = 0;
+    THcntr = 0;
     while(1){
         g_bFeedWatchdog = true;
         TMP006DrvGetTemp_(&sensorTemp);
 #define snr
 #ifdef snr
         st_dev1 = sonar_sensrA(&mean_SNSR1, stl_data1, T_snr);//Motion detection and distance measurement. PIN_62 GPIO_7
-        st_dev1 = noise_suppr (st_dev1, &mean_SNSR1, stl_data3, stl_data1);//Noise suppression. 617/2.54 = 243 counts per cm
+        st_dev1 = noise_suppr (st_dev1, &mean_SNSR1, stl_data3, stl_data1, 10);//Noise suppression. 617/2.54 = 243 counts per cm
         prnt_sonarA (st_dev1, mean_SNSR1);//Print score and distance in counts 617 counts per inch
 #endif
         ADCsum = adc_read (&run);
         UART_PRINT(" VDC= %f ",(float)ADCsum);
 #ifdef AK975
-        //Read GPIO12: AK9753A INT
+        if (g_ulTimerInts > 8){//The timer is about to expire
+            THRarry [THcntr] = get_IR_ref (20);//float THRarry [4];
+            UART_PRINT(" THRarry= %.3f \n",THRarry [THcntr]);//THcntr
+            THcntr++;//array counter
+            if (THcntr > 3){
+                THcntr = 0;
+                THR = 0;
+                for (i=0; i<4; i++)
+                    THR += outlier (THRarry, 4);
+                THR = THR/4;
+                UART_PRINT(" THR= %.3f \n",THR);
+            }
+        }
         GPIO_IF_GetPortNPin(SH_GPIO_12,&uiGPIOPort,&pucGPIOPin);    // Computes port and pin number from the GPIO number
         ucPinValue = GPIO_IF_Get(SH_GPIO_12,uiGPIOPort,pucGPIOPin); // Read pin status of GPIO22
         if(ucPinValue == 0){
@@ -1982,8 +2035,11 @@ int main()
        IR4s = SignMag (IR4);
        IR_AVE = (IR1s + IR2s + IR3s + IR4s)/4;//A negative number will be represented as 2's comp
        //IR_AVE = IR_AVE & 0xFFFF; // only use bottom 16 bits
-       if(mean_SNSR1 > 10000){
-           if (IR_AVE > 800){//10000/617 = 16.2 inch.
+       /*
+        * Need to generate an event when the ebt is reset back to zero.
+        */
+       if((mean_SNSR1 > 10000) && (st_dev1 < STDEVTH)){
+           if (IR_AVE > (THR + 200)){//IR magnitude
                ebt = 1;
                UART_PRINT(" IR = %.0f ",IR_AVE);
            }else{
@@ -2034,14 +2090,17 @@ int main()
        }
 #ifdef cloud
 /*
- * Test if there is motion. The "t_cntr>40" prevents multiple data transmissions.
+ * Test if there is motion. The "t_cntr>10" prevents multiple data transmissions.
  */
-       if (((st_dev1>STDEVTH || ebt==1) && t_cntr>40) || t_cntr2 == 180){//Post data
+       if (((st_dev1>STDEVTH || ebt==1) && t_cntr>10) || t_cntr2 == 180){//Post data
             if(cnn_fail == 0){
                 t_cntr = 0;
-                ebt = 0;
-                if (t_cntr2 > 89)
+                if (t_cntr2 > 179)
                     t_cntr2 = 0;
+                if (ebt == 1){
+                    ebt = 0;
+                    t_cntr2 = 170;// if the sick person leaves, quick reset image to a happy person on the web. Setting t_cntr2 o 120 will reduce reset time
+                }
                 lRetVal = HTTPPostMethod_data(&httpClient);//Reads page responce: lRetVal = readResponse(httpClient); commented out
                 if(lRetVal < 0){// If failed post data to the web-page
                     f_cntr++;
